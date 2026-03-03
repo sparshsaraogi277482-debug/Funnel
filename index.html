@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pluto — Funnel & Retention Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2356AE53'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold'>P</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.7.2/Recharts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo, useCallback } = React;
+const {
+  AreaChart, Area, BarChart, Bar, LineChart, Line, XAxis, YAxis,
+  CartesianGrid, Tooltip, ResponsiveContainer, Cell
+} = Recharts;
+
+
+const G = "#56AE53", GL = "#e8f5e9", GD = "#2d8c4e";
+const BD = "#e8ede8", TX = "#1a2e1a", TS = "#5a7a5a", TM = "#8fa98f";
+const BL = "#2563eb", BLL = "#eff6ff";
+const RD = "#dc2626", AM = "#d97706", AML = "#fffbeb", PR = "#7c3aed";
+
+const SAMPLE = [
+  {id:1,n:"Arjun Mehta",p:"98765-0001",td:"2025-09-15",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:2,n:"Priya Sharma",p:"98765-0002",td:"2025-09-20",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,1,1,0,0,0,0,0,0,0,0]},
+  {id:3,n:"Rahul Kumar",p:"98765-0003",td:"2025-10-01",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:4,n:"Sneha Iyer",p:"98765-0004",td:"2025-10-05",cv:false,pt:"Weekly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:5,n:"Vikram Singh",p:"98765-0005",td:"2025-10-10",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,1,0,0,0,0,0,0,0,0,0]},
+  {id:6,n:"Ananya Reddy",p:"98765-0006",td:"2025-11-01",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:7,n:"Karthik Nair",p:"98765-0007",td:"2025-11-05",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,0,0,0,0,0,0,0,0,0,0]},
+  {id:8,n:"Deepa Joshi",p:"98765-0008",td:"2025-11-15",cv:true,pt:"Weekly",w:[1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:9,n:"Sanjay Patel",p:"98765-0009",td:"2025-12-01",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,0,0,0,0,0,0,0,0,0,0]},
+  {id:10,n:"Meera Desai",p:"98765-0010",td:"2025-12-05",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:11,n:"Aditya Rao",p:"98765-0011",td:"2026-01-02",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:12,n:"Pooja Gupta",p:"98765-0012",td:"2026-01-05",cv:true,pt:"Weekly",w:[1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:13,n:"Rohan Verma",p:"98765-0013",td:"2026-01-10",cv:false,pt:"Weekly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:14,n:"Neha Kapoor",p:"98765-0014",td:"2026-02-01",cv:true,pt:"Weekly",w:[1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:15,n:"Amit Saxena",p:"98765-0015",td:"2026-02-05",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:16,n:"Divya Pillai",p:"98765-0016",td:"2026-02-10",cv:true,pt:"Weekly",w:[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+];
+
+function monthsRetained(u) { return !u.cv ? 0 : u.pt === "Weekly" ? Math.floor(u.w.filter(Boolean).length / 4) : u.m.filter(Boolean).length; }
+function totalRenewals(u) { return !u.cv ? 0 : u.pt === "Weekly" ? u.w.filter(Boolean).length : u.m.filter(Boolean).length; }
+function userStatus(u) { if (!u.cv) return "Trial"; const mr = monthsRetained(u); if (mr === 0) return "< 1 Month"; return "Retained " + mr + "M+"; }
+function getCohort(d) { if (!d) return ""; return new Date(d).toLocaleDateString("en-US", { month: "short", year: "2-digit" }); }
+function pct(n, d) { return d > 0 ? ((n / d) * 100).toFixed(1) : "0.0"; }
+function pctRaw(n, d) { return d > 0 ? n / d : 0; }
+
+const stBg = s => s === "Trial" ? "#f1f5f9" : s === "< 1 Month" ? AML : GL;
+const stFg = s => s === "Trial" ? "#94a3b8" : s === "< 1 Month" ? AM : G;
+const hcBg = v => v >= 0.8 ? G : v >= 0.5 ? GL : v >= 0.2 ? AML : v > 0 ? "#fef2f2" : "#f5f5f5";
+const hcFg = v => v >= 0.8 ? "white" : v >= 0.5 ? G : v >= 0.2 ? AM : v > 0 ? RD : "#ccc";
+
+function Tip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  const v = payload[0].value;
+  return (
+    <div style={{ background: TX, padding: "8px 14px", borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,.2)" }}>
+      <div style={{ color: "#a3c4a3", fontSize: 11, fontWeight: 600 }}>{label}</div>
+      <div style={{ color: "white", fontSize: 15, fontWeight: 700 }}>{typeof v === "number" && v <= 1 ? (v * 100).toFixed(1) + "%" : v}</div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, sub, color }) {
+  return (
+    <div style={{ display: "inline-block", width: "calc(50% - 6px)", verticalAlign: "top", marginBottom: 10, marginRight: 10, background: "white", border: "1px solid " + BD, borderRadius: 14, padding: "14px 16px", boxSizing: "border-box" }}>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1.2, color: TM, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 30, fontWeight: 700, color: color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+      <div style={{ fontSize: 10, color: TM }}>{sub}</div>
+    </div>
+  );
+}
+
+function App() {
+  const [users, setUsers] = useState(SAMPLE);
+  const [tab, setTab] = useState("overview");
+  const [rv, setRv] = useState("weekly");
+  const [exp, setExp] = useState(null);
+
+  const upd = useCallback((id, f, v) => setUsers(p => p.map(u => u.id === id ? { ...u, [f]: v } : u)), []);
+  const tog = useCallback((id, type, idx) => setUsers(p => p.map(u => {
+    if (u.id !== id) return u;
+    const a = [...u[type]]; a[idx] = a[idx] ? 0 : 1; return { ...u, [type]: a };
+  })), []);
+
+  const data = useMemo(() => {
+    const all = users.length;
+    const paid = users.filter(u => u.cv);
+    const paidN = paid.length;
+    const wkUsers = paid.filter(u => u.pt === "Weekly");
+    const moUsers = paid.filter(u => u.pt === "Monthly");
+    const wkN = wkUsers.length;
+    const moN = moUsers.length;
+    const m1 = paid.filter(u => monthsRetained(u) >= 1).length;
+    const m2 = paid.filter(u => monthsRetained(u) >= 2).length;
+    const m3 = paid.filter(u => monthsRetained(u) >= 3).length;
+    const m4 = paid.filter(u => monthsRetained(u) >= 4).length;
+    const avgM = paidN > 0 ? (paid.reduce((s, u) => s + monthsRetained(u), 0) / paidN).toFixed(1) : "0";
+
+    const wRet = Array.from({ length: 16 }, (_, i) => {
+      const count = wkUsers.filter(u => u.w[i]).length;
+      return { label: "W" + (i + 1), users: count, ofPaid: pctRaw(count, wkN), isMonth: (i + 1) % 4 === 0, monthEq: Math.ceil((i + 1) / 4) };
+    });
+    const mRet = Array.from({ length: 12 }, (_, i) => {
+      const count = moUsers.filter(u => u.m[i]).length;
+      return { label: "M" + (i + 1), users: count, ofPaid: pctRaw(count, moN) };
+    });
+
+    const cohMap = {};
+    users.forEach(u => {
+      const c = getCohort(u.td); if (!c) return;
+      if (!cohMap[c]) cohMap[c] = { co: c, trials: 0, paid: 0, mm: [0,0,0,0,0,0], sk: new Date(u.td) };
+      cohMap[c].trials++;
+      if (u.cv) { cohMap[c].paid++; const mr = monthsRetained(u); for (let i = 0; i < 6; i++) if (mr >= i + 1) cohMap[c].mm[i]++; }
+    });
+    const cohorts = Object.values(cohMap).sort((a, b) => a.sk - b.sk);
+
+    return { all, paidN, wkN, moN, m1, m2, m3, m4, avgM, wRet, mRet, cohorts };
+  }, [users]);
+
+  const funnel = [
+    { label: "Total Trials", count: data.all, note: "All trial users", color: "#94a3b8" },
+    { label: "Converted to Paid", count: data.paidN, note: pct(data.paidN, data.all) + "% of trials", color: BL },
+    { label: "Retained 1+ Month", count: data.m1, note: pct(data.m1, data.paidN) + "% of paid", color: G },
+    { label: "Retained 2+ Months", count: data.m2, note: pct(data.m2, data.paidN) + "% of paid", color: GD },
+    { label: "Retained 3+ Months", count: data.m3, note: pct(data.m3, data.paidN) + "% of paid", color: TX },
+  ];
+
+  const retCurve = [
+    { label: "Paid", value: 1 },
+    { label: "M1", value: pctRaw(data.m1, data.paidN) },
+    { label: "M2", value: pctRaw(data.m2, data.paidN) },
+    { label: "M3", value: pctRaw(data.m3, data.paidN) },
+    { label: "M4", value: pctRaw(data.m4, data.paidN) },
+  ];
+
+  return (
+    <div style={{ fontFamily: "'Instrument Sans', system-ui, sans-serif", background: "#fafcfa", color: TX, minHeight: "100vh" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+      <style>{`*{box-sizing:border-box;margin:0;padding:0}.cd{background:#fff;border:1px solid ${BD};border-radius:14px}.mn{font-family:'JetBrains Mono',monospace}input,select,button{font-family:inherit}`}</style>
+
+      {/* HEADER */}
+      <div style={{ background: "white", borderBottom: "1px solid " + BD, padding: "0 20px", position: "sticky", top: 0, zIndex: 50 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 50 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 26, height: 26, borderRadius: 7, background: G, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 700, fontSize: 13 }}>P</div>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>Pluto</span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: TM, background: GL, padding: "2px 8px", borderRadius: 16 }}>Funnel Tracker</span>
+          </div>
+          <div style={{ display: "flex", gap: 2, background: "#f4f7f4", padding: 3, borderRadius: 10 }}>
+            {[["overview","Overview"],["retention","Retention"],["cohorts","Cohorts"],["data","Users"]].map(([id,label]) => (
+              <button key={id} onClick={() => setTab(id)} style={{ padding: "5px 12px", borderRadius: 7, fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", background: tab === id ? G : "transparent", color: tab === id ? "white" : TS }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "18px 20px 60px" }}>
+
+        {/* ═══ OVERVIEW ═══ */}
+        {tab === "overview" && (
+          <div>
+            {/* KPI Cards - using inline-block, no grid */}
+            <div style={{ marginBottom: 16, fontSize: 0 }}>
+              <KpiCard label="TOTAL TRIALS" value={data.all} sub="Users who started trial" color={TS} />
+              <KpiCard label="PAID USERS" value={data.paidN} sub={pct(data.paidN, data.all) + "% conversion rate"} color={BL} />
+              <KpiCard label="RETAINED 1+ MONTH" value={data.m1} sub={pct(data.m1, data.paidN) + "% of paid users"} color={G} />
+              <KpiCard label="AVG MONTHS RETAINED" value={data.avgM} sub="Per paid user" color={PR} />
+            </div>
+
+            {/* FUNNEL — simple full-width rows */}
+            <div className="cd" style={{ padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Trial → Paid → Retained Funnel</div>
+              <div style={{ fontSize: 10, color: TM, marginBottom: 16 }}>How users progress through each stage</div>
+              {funnel.map((f, i) => {
+                const barW = data.all > 0 ? Math.max((f.count / data.all) * 100, 3) : 3;
+                return (
+                  <div key={i} style={{ marginBottom: 10 }}>
+                    <div style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: TX }}>{f.label}</span>
+                      <span style={{ float: "right" }}>
+                        <span style={{ fontSize: 10, color: TM, marginRight: 8 }}>{f.note}</span>
+                        <span className="mn" style={{ fontSize: 16, fontWeight: 700, color: f.color }}>{f.count}</span>
+                      </span>
+                    </div>
+                    <div style={{ width: "100%", height: 10, background: "#f4f7f4", borderRadius: 5, overflow: "hidden" }}>
+                      <div style={{ width: barW + "%", height: "100%", background: f.color, borderRadius: 5 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Retention Curve */}
+            <div className="cd" style={{ padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Retention Curve</div>
+              <div style={{ fontSize: 10, color: TM, marginBottom: 12 }}>% of paid users retained at each month (4 weekly renewals = 1 month)</div>
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={retCurve}>
+                  <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={G} stopOpacity={0.2} /><stop offset="100%" stopColor={G} stopOpacity={0} /></linearGradient></defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={BD} />
+                  <XAxis dataKey="label" tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={v => (v * 100).toFixed(0) + "%"} tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 1]} width={34} />
+                  <Tooltip content={<Tip />} />
+                  <Area type="monotone" dataKey="value" stroke={G} fill="url(#rg)" strokeWidth={2.5} dot={{ fill: G, r: 5, strokeWidth: 2, stroke: "white" }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Plan Split */}
+            <div style={{ fontSize: 0 }}>
+              {[
+                { label: "Weekly Plans", n: data.wkN, c: BL, bg: BLL },
+                { label: "Monthly Plans", n: data.moN, c: G, bg: GL },
+              ].map(p => (
+                <div key={p.label} style={{ display: "inline-block", width: "calc(50% - 6px)", marginRight: 10, verticalAlign: "top", boxSizing: "border-box", padding: "14px 16px", borderRadius: 14, background: p.bg }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: p.c, marginBottom: 2 }}>{p.label}</div>
+                  <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 24, fontWeight: 700, color: p.c }}>{p.n}</div>
+                  <div style={{ marginTop: 6, height: 4, borderRadius: 2, background: "white" }}>
+                    <div style={{ height: "100%", borderRadius: 2, background: p.c, width: (data.paidN > 0 ? (p.n / data.paidN) * 100 : 0) + "%" }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: TS, marginTop: 3 }}>{pct(p.n, data.paidN)}% of paid users</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ═══ RETENTION ═══ */}
+        {tab === "retention" && (
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              {["weekly", "monthly"].map(v => (
+                <button key={v} onClick={() => setRv(v)} style={{ padding: "7px 18px", borderRadius: 8, fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer", marginRight: 6, background: rv === v ? (v === "weekly" ? BL : G) : "white", color: rv === v ? "white" : TS, boxShadow: rv === v ? "none" : "0 0 0 1px " + BD }}>
+                  {v === "weekly" ? "Weekly" : "Monthly"}
+                </button>
+              ))}
+              <span style={{ fontSize: 10, color: G, background: GL, padding: "4px 10px", borderRadius: 6, fontWeight: 600, marginLeft: 8 }}>W4 = M1 · W8 = M2 · W12 = M3 · W16 = M4</span>
+            </div>
+
+            <div className="cd" style={{ padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{rv === "weekly" ? "Weekly Renewal Rate" : "Monthly Renewal Rate"}</div>
+              <div style={{ fontSize: 10, color: TM, marginBottom: 12 }}>
+                {rv === "weekly" ? "Out of " + data.wkN + " weekly users, how many renewed each week" : "Out of " + data.moN + " monthly users, how many renewed each month"}
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={rv === "weekly" ? data.wRet : data.mRet} barSize={rv === "weekly" ? 20 : 32}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={BD} />
+                  <XAxis dataKey="label" tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={v => (v * 100).toFixed(0) + "%"} tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} domain={[0, 1]} width={34} />
+                  <Tooltip content={<Tip />} />
+                  <Bar dataKey="ofPaid" radius={[4, 4, 0, 0]}>
+                    {(rv === "weekly" ? data.wRet : data.mRet).map((d, i) => (
+                      <Cell key={i} fill={rv === "weekly" ? (d.isMonth ? G : BL) : G} fillOpacity={d.ofPaid > 0 ? 1 : 0.12} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {rv === "weekly" && (
+                <div style={{ marginTop: 6, fontSize: 10, color: TM }}>
+                  <span style={{ color: BL }}>■</span> Regular week&nbsp;&nbsp;
+                  <span style={{ color: G }}>■</span> Month-equivalent
+                </div>
+              )}
+            </div>
+
+            <div className="cd" style={{ overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f8faf8" }}>
+                    {rv === "weekly"
+                      ? ["Week", "Renewed", "% of " + data.wkN + " Weekly Users", "Month Eq."].map(h => (
+                          <th key={h} style={{ padding: "10px 12px", fontSize: 10, fontWeight: 700, color: TM, textAlign: "center", borderBottom: "1px solid " + BD }}>{h}</th>))
+                      : ["Month", "Renewed", "% of " + data.moN + " Monthly Users"].map(h => (
+                          <th key={h} style={{ padding: "10px 12px", fontSize: 10, fontWeight: 700, color: TM, textAlign: "center", borderBottom: "1px solid " + BD }}>{h}</th>))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(rv === "weekly" ? data.wRet : data.mRet).map((d, i) => {
+                    const p = d.ofPaid;
+                    return (
+                      <tr key={i} style={{ borderBottom: "1px solid " + BD, background: rv === "weekly" && d.isMonth ? GL + "55" : "white" }}>
+                        <td style={{ padding: "8px 12px", fontSize: 12, fontWeight: 700, textAlign: "center", color: rv === "weekly" && d.isMonth ? G : TX }}>{d.label}</td>
+                        <td className="mn" style={{ padding: "8px 12px", fontSize: 13, textAlign: "center", fontWeight: 600 }}>{d.users}</td>
+                        <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                          <span className="mn" style={{ fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 5, background: p >= 0.8 ? GL : p >= 0.5 ? AML : p > 0 ? "#fef2f2" : "#f5f5f5", color: p >= 0.8 ? G : p >= 0.5 ? AM : p > 0 ? RD : "#ccc" }}>{(p * 100).toFixed(1)}%</span>
+                        </td>
+                        {rv === "weekly" && (
+                          <td style={{ padding: "8px 12px", fontSize: 11, textAlign: "center", fontWeight: 700, color: d.isMonth ? G : "transparent" }}>{d.isMonth ? "= M" + d.monthEq : ""}</td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ COHORTS ═══ */}
+        {tab === "cohorts" && (
+          <div>
+            {/* Cohort Bar Chart — Trials vs Paid per month */}
+            <div className="cd" style={{ padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Monthly Cohort Overview</div>
+              <div style={{ fontSize: 10, color: TM, marginBottom: 14 }}>Each bar group = users who started trial that month. Shows how many tried vs how many converted to paid.</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={data.cohorts.map(c => ({ name: c.co, Trials: c.trials, Paid: c.paid }))} barGap={2} barSize={18}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={BD} />
+                  <XAxis dataKey="name" tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: TM, fontSize: 10 }} axisLine={false} tickLine={false} width={28} allowDecimals={false} />
+                  <Tooltip contentStyle={{ background: TX, border: "none", borderRadius: 10, color: "white", fontSize: 12 }} />
+                  <Bar dataKey="Trials" fill="#cbd5e1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Paid" fill={G} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ marginTop: 6, fontSize: 10, color: TM }}>
+                <span style={{ color: "#cbd5e1" }}>■</span> Trials&nbsp;&nbsp;
+                <span style={{ color: G }}>■</span> Converted to Paid
+              </div>
+            </div>
+
+            {/* Simple Cohort Table */}
+            <div className="cd" style={{ overflow: "hidden", marginBottom: 14 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#f8faf8" }}>
+                    {["Cohort", "Trials", "Paid", "Conversion Rate", ""].map(h => (
+                      <th key={h} style={{ padding: "10px 14px", fontSize: 10, fontWeight: 700, color: TM, textAlign: h === "" ? "left" : "center", borderBottom: "1px solid " + BD }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.cohorts.map((c, ci) => {
+                    const rate = c.trials > 0 ? c.paid / c.trials : 0;
+                    return (
+                      <tr key={ci} style={{ borderBottom: "1px solid " + BD }}>
+                        <td style={{ padding: "10px 14px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{c.co}</td>
+                        <td className="mn" style={{ padding: "10px 14px", fontSize: 13, textAlign: "center", fontWeight: 600 }}>{c.trials}</td>
+                        <td className="mn" style={{ padding: "10px 14px", fontSize: 13, textAlign: "center", fontWeight: 700, color: G }}>{c.paid}</td>
+                        <td className="mn" style={{ padding: "10px 14px", fontSize: 12, textAlign: "center", fontWeight: 700, color: rate >= 0.8 ? G : rate >= 0.5 ? AM : RD }}>{(rate * 100).toFixed(0)}%</td>
+                        <td style={{ padding: "10px 14px", width: "30%" }}>
+                          <div style={{ height: 8, background: "#f4f7f4", borderRadius: 4, overflow: "hidden" }}>
+                            <div style={{ height: "100%", background: rate >= 0.8 ? G : rate >= 0.5 ? AM : RD, borderRadius: 4, width: (rate * 100) + "%" }} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Retention by Cohort — simplified to just M1 & M2 */}
+            <div className="cd" style={{ padding: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Retention After Conversion</div>
+              <div style={{ fontSize: 10, color: TM, marginBottom: 14 }}>Of each cohort's paid users, how many stayed for 1 month and 2 months?</div>
+              {data.cohorts.map((c, ci) => {
+                const m1r = c.paid > 0 ? c.mm[0] / c.paid : 0;
+                const m2r = c.paid > 0 ? c.mm[1] / c.paid : 0;
+                if (c.paid === 0) return null;
+                return (
+                  <div key={ci} style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>
+                      {c.co}
+                      <span style={{ fontWeight: 500, color: TM, marginLeft: 8, fontSize: 10 }}>{c.paid} paid users</span>
+                    </div>
+                    {/* M1 bar */}
+                    <div style={{ marginBottom: 4 }}>
+                      <div style={{ marginBottom: 2 }}>
+                        <span style={{ fontSize: 10, color: TS }}>1 Month Retained</span>
+                        <span className="mn" style={{ float: "right", fontSize: 11, fontWeight: 700, color: m1r >= 0.5 ? G : AM }}>{c.mm[0]}/{c.paid} ({(m1r * 100).toFixed(0)}%)</span>
+                      </div>
+                      <div style={{ height: 8, background: "#f4f7f4", borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", background: G, borderRadius: 4, width: (m1r * 100) + "%", opacity: 0.8 }} />
+                      </div>
+                    </div>
+                    {/* M2 bar */}
+                    <div>
+                      <div style={{ marginBottom: 2 }}>
+                        <span style={{ fontSize: 10, color: TS }}>2 Months Retained</span>
+                        <span className="mn" style={{ float: "right", fontSize: 11, fontWeight: 700, color: m2r >= 0.5 ? G : m2r > 0 ? AM : TM }}>{c.mm[1]}/{c.paid} ({(m2r * 100).toFixed(0)}%)</span>
+                      </div>
+                      <div style={{ height: 8, background: "#f4f7f4", borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ height: "100%", background: BL, borderRadius: 4, width: (m2r * 100) + "%", opacity: 0.7 }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop: 8, fontSize: 10, color: TM, padding: "8px 12px", background: "#f8faf8", borderRadius: 8 }}>
+                <span style={{ color: G }}>■</span> 1 month retained&nbsp;&nbsp;
+                <span style={{ color: BL }}>■</span> 2 months retained&nbsp;&nbsp;
+                (4 weekly renewals = 1 month)
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ USERS ═══ */}
+        {tab === "data" && (
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>User Management</span>
+              <button onClick={() => setUsers(p => [...p, { id: Date.now(), n: "", p: "", td: "", cv: false, pt: "Weekly", w: Array(16).fill(0), m: Array(12).fill(0) }])} style={{ float: "right", padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: 700, border: "none", cursor: "pointer", background: G, color: "white" }}>+ Add User</button>
+              <div style={{ fontSize: 11, color: TM, marginTop: 2 }}>Click row to expand renewals · {users.length} users</div>
+            </div>
+
+            <div className="cd" style={{ overflow: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 700 }}>
+                <thead>
+                  <tr style={{ background: "#f8faf8" }}>
+                    {["#", "Name", "Phone", "Trial", "Cohort", "Conv", "Plan", "Ren.", "Months", "Status", ""].map(h => (
+                      <th key={h} style={{ padding: "9px 6px", fontSize: 9, fontWeight: 700, color: TM, textAlign: "left", borderBottom: "1px solid " + BD, whiteSpace: "nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u, idx) => {
+                    const st = userStatus(u);
+                    const isE = exp === u.id;
+                    return (
+                      <React.Fragment key={u.id}>
+                        <tr onClick={() => setExp(isE ? null : u.id)} style={{ borderBottom: "1px solid " + BD, cursor: "pointer", background: isE ? GL + "44" : idx % 2 === 0 ? "white" : "#fcfdfc" }}>
+                          <td style={{ padding: "7px 6px", fontSize: 11, color: TM }}>{idx + 1}</td>
+                          <td style={{ padding: "7px 6px" }}>
+                            <input value={u.n} onChange={e => upd(u.id, "n", e.target.value)} onClick={e => e.stopPropagation()} placeholder="Name" style={{ background: "transparent", border: "none", color: TX, fontSize: 12, fontWeight: 600, width: 100, outline: "none" }} />
+                          </td>
+                          <td style={{ padding: "7px 6px" }}>
+                            <input value={u.p} onChange={e => upd(u.id, "p", e.target.value)} onClick={e => e.stopPropagation()} placeholder="Phone" style={{ background: "transparent", border: "none", color: TS, fontSize: 11, width: 80, outline: "none" }} />
+                          </td>
+                          <td style={{ padding: "7px 6px" }}>
+                            <input type="date" value={u.td} onChange={e => upd(u.id, "td", e.target.value)} onClick={e => e.stopPropagation()} style={{ background: "transparent", border: "none", color: BL, fontSize: 11, outline: "none", fontWeight: 600 }} />
+                          </td>
+                          <td style={{ padding: "7px 6px", fontSize: 11, color: TM }}>{getCohort(u.td)}</td>
+                          <td style={{ padding: "7px 6px" }}>
+                            <button onClick={e => { e.stopPropagation(); upd(u.id, "cv", !u.cv); }} style={{ padding: "2px 10px", borderRadius: 12, fontSize: 10, fontWeight: 700, border: "none", cursor: "pointer", background: u.cv ? GL : "#f1f5f9", color: u.cv ? G : "#94a3b8" }}>{u.cv ? "Yes" : "No"}</button>
+                          </td>
+                          <td style={{ padding: "7px 6px" }} onClick={e => e.stopPropagation()}>
+                            <select value={u.pt} onChange={e => upd(u.id, "pt", e.target.value)} style={{ background: u.pt === "Weekly" ? BLL : GL, border: "none", color: u.pt === "Weekly" ? BL : G, fontSize: 10, borderRadius: 5, padding: "2px 5px", fontWeight: 700, cursor: "pointer" }}>
+                              <option value="Weekly">Weekly</option>
+                              <option value="Monthly">Monthly</option>
+                            </select>
+                          </td>
+                          <td className="mn" style={{ padding: "7px 6px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>{totalRenewals(u)}</td>
+                          <td className="mn" style={{ padding: "7px 6px", fontSize: 12, fontWeight: 700, color: G, textAlign: "center" }}>{monthsRetained(u)}</td>
+                          <td style={{ padding: "7px 6px" }}><span style={{ padding: "2px 8px", borderRadius: 12, fontSize: 9, fontWeight: 700, background: stBg(st), color: stFg(st), whiteSpace: "nowrap" }}>{st}</span></td>
+                          <td style={{ padding: "7px 6px", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: 10, color: isE ? G : TM, marginRight: 4 }}>{isE ? "▲" : "▼"}</span>
+                            <button onClick={e => { e.stopPropagation(); setUsers(p => p.filter(x => x.id !== u.id)); }} style={{ background: "none", border: "none", cursor: "pointer", opacity: 0.4, color: RD, fontSize: 12 }}>✕</button>
+                          </td>
+                        </tr>
+                        {isE && u.cv && (
+                          <tr style={{ background: "#f8fdf8" }}>
+                            <td colSpan={11} style={{ padding: "12px 16px", borderBottom: "2px solid " + G + "30" }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: u.pt === "Weekly" ? BL : G, marginBottom: 8 }}>
+                                {u.pt === "Weekly" ? "WEEKLY RENEWALS — click to toggle (4 weeks = 1 month)" : "MONTHLY RENEWALS — click to toggle"}
+                              </div>
+                              <div style={{ lineHeight: 0 }}>
+                                {(u.pt === "Weekly" ? u.w : u.m).map((v, vi) => {
+                                  const isW = u.pt === "Weekly";
+                                  const isMile = isW && (vi + 1) % 4 === 0;
+                                  const clr = isW ? BL : G;
+                                  return (
+                                    <button key={vi} onClick={() => tog(u.id, isW ? "w" : "m", vi)} style={{ display: "inline-block", textAlign: "center", padding: "4px 2px", borderRadius: 6, minWidth: isW ? 36 : 42, border: "1.5px solid " + (v ? clr : BD), background: v ? clr + "10" : "white", cursor: "pointer", margin: 2, verticalAlign: "top" }}>
+                                      <div style={{ fontSize: 8, fontWeight: 700, color: v ? clr : TM }}>{isW ? "W" + (vi + 1) : "M" + (vi + 1)}</div>
+                                      <div style={{ fontSize: 14, fontWeight: 800, color: v ? clr : "#ddd", lineHeight: 1.2 }}>{v ? "✓" : "·"}</div>
+                                      {isMile && <div style={{ fontSize: 7, fontWeight: 700, color: G, background: GL, padding: "0 3px", borderRadius: 3, marginTop: 1 }}>= M{(vi + 1) / 4}</div>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
