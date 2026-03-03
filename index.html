@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pluto — Funnel & Retention Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2356AE53'/><text x='16' y='23' text-anchor='middle' fill='white' font-size='20' font-weight='bold'>P</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:#fafcfa;color:#1a2e1a;min-height:100vh}
+.mn{font-family:'JetBrains Mono',monospace}
+.cd{background:#fff;border:1px solid #e8ede8;border-radius:14px}
+header{background:#fff;border-bottom:1px solid #e8ede8;padding:0 20px;position:sticky;top:0;z-index:50}
+.hdr{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:52px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-icon{width:26px;height:26px;border-radius:7px;background:#56AE53;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.logo-text{font-size:15px;font-weight:700}
+.badge{font-size:10px;font-weight:600;color:#8fa98f;background:#e8f5e9;padding:2px 8px;border-radius:16px}
+.tabs{display:flex;gap:2px;background:#f4f7f4;padding:3px;border-radius:10px}
+.tab{padding:5px 12px;border-radius:7px;font-size:11px;font-weight:600;border:none;cursor:pointer;background:transparent;color:#5a7a5a;font-family:inherit}
+.tab.on{background:#56AE53;color:#fff}
+main{max-width:900px;margin:0 auto;padding:18px 20px 60px}
+.kpis{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.kpi{flex:1;min-width:140px;padding:14px 16px;text-align:center}
+.kpi-label{font-size:9px;font-weight:700;letter-spacing:1.2px;color:#8fa98f;margin-bottom:4px}
+.kpi-val{font-size:30px;font-weight:700;line-height:1;margin-bottom:4px}
+.kpi-sub{font-size:10px;color:#8fa98f}
+.section-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.section-sub{font-size:10px;color:#8fa98f;margin-bottom:14px}
+.funnel-row{margin-bottom:10px}
+.funnel-top{display:flex;justify-content:space-between;margin-bottom:4px}
+.funnel-label{font-size:12px;font-weight:600}
+.funnel-right{display:flex;align-items:baseline;gap:8px}
+.funnel-note{font-size:10px;color:#8fa98f}
+.funnel-val{font-size:16px;font-weight:700}
+.bar-bg{width:100%;height:10px;background:#f4f7f4;border-radius:5px;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;transition:width .6s}
+.plan-row{display:flex;gap:10px;margin-top:0}
+.plan-card{flex:1;padding:12px 14px;border-radius:10px}
+.plan-top{display:flex;justify-content:space-between;align-items:center}
+.plan-label{font-size:12px;font-weight:600}
+.plan-val{font-size:22px;font-weight:700}
+.plan-bar{margin-top:6px;height:4px;border-radius:2px;overflow:hidden}
+.plan-sub{font-size:10px;margin-top:3px}
+.toggle-row{display:flex;gap:6px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.toggle-btn{padding:7px 18px;border-radius:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;font-family:inherit}
+.toggle-hint{margin-left:auto;font-size:10px;color:#56AE53;background:#e8f5e9;padding:4px 10px;border-radius:6px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 12px;font-size:10px;font-weight:700;color:#8fa98f;text-align:center;border-bottom:1px solid #e8ede8;background:#f8faf8}
+td{padding:8px 12px;font-size:12px;text-align:center;border-bottom:1px solid #e8ede8}
+.pct-badge{font-weight:700;padding:2px 10px;border-radius:5px;font-size:12px}
+.pct-g{background:#e8f5e9;color:#56AE53}.pct-a{background:#fffbeb;color:#d97706}.pct-r{background:#fef2f2;color:#dc2626}.pct-0{background:#f5f5f5;color:#ccc}
+.row-green{background:rgba(232,245,233,.3)}
+.month-eq{font-size:11px;font-weight:700;color:#56AE53}
+.coh-bar{margin-bottom:14px}
+.coh-name{font-size:12px;font-weight:700;margin-bottom:6px}
+.coh-name span{font-weight:500;color:#8fa98f;margin-left:8px;font-size:10px}
+.coh-metric{margin-bottom:4px}
+.coh-metric-top{display:flex;justify-content:space-between;margin-bottom:2px}
+.coh-metric-label{font-size:10px;color:#5a7a5a}
+.chart-wrap{padding:20px;margin-bottom:14px}
+.chart-box{position:relative;height:220px;margin-bottom:8px}
+.user-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.add-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:#56AE53;color:#fff;font-family:inherit}
+.user-row{cursor:pointer}
+.user-row:hover{background:#f8fdf8}
+.expand-panel{background:#f8fdf8;padding:12px 18px;border-bottom:2px solid rgba(86,174,83,.2)}
+.expand-title{font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+.renewal-btns{display:flex;flex-wrap:wrap;gap:4px}
+.ren-btn{display:inline-flex;flex-direction:column;align-items:center;gap:1px;padding:4px 3px;border-radius:6px;min-width:36px;border-width:1.5px;border-style:solid;cursor:pointer;background:#fff;font-family:inherit}
+.ren-btn.on{background:rgba(37,99,235,.06)}
+.ren-btn.on-m{background:rgba(86,174,83,.06)}
+.ren-label{font-size:8px;font-weight:700}
+.ren-check{font-size:14px;font-weight:800;line-height:1.2}
+.ren-mile{font-size:7px;font-weight:700;color:#56AE53;background:#e8f5e9;padding:0 3px;border-radius:3px;margin-top:1px}
+.conv-btn{padding:2px 10px;border-radius:12px;font-size:10px;font-weight:700;border:none;cursor:pointer}
+.plan-select{border:none;font-size:10px;border-radius:5px;padding:2px 5px;font-weight:700;cursor:pointer;font-family:inherit}
+.status-badge{padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;white-space:nowrap}
+.del-btn{background:none;border:none;cursor:pointer;opacity:.4;color:#dc2626;font-size:12px}
+.hidden{display:none}
+.note-box{margin-top:8px;font-size:10px;color:#8fa98f;padding:8px 12px;background:#f8faf8;border-radius:8px}
+input[type="text"],input[type="date"]{background:transparent;border:none;outline:none;font-family:inherit}
+</style>
+</head>
+<body>
+
+<header>
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-icon">P</div>
+    <span class="logo-text">Pluto</span>
+    <span class="badge">Funnel Tracker</span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</div>
+</header>
+
+<main id="main"></main>
+
+<script>
+// ═══ DATA ═══
+var users = [
+  {id:1,n:"Arjun Mehta",p:"98765-0001",td:"2025-09-15",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:2,n:"Priya Sharma",p:"98765-0002",td:"2025-09-20",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,1,1,0,0,0,0,0,0,0,0]},
+  {id:3,n:"Rahul Kumar",p:"98765-0003",td:"2025-10-01",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:4,n:"Sneha Iyer",p:"98765-0004",td:"2025-10-05",cv:false,pt:"Weekly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:5,n:"Vikram Singh",p:"98765-0005",td:"2025-10-10",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,1,0,0,0,0,0,0,0,0,0]},
+  {id:6,n:"Ananya Reddy",p:"98765-0006",td:"2025-11-01",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:7,n:"Karthik Nair",p:"98765-0007",td:"2025-11-05",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,0,0,0,0,0,0,0,0,0,0]},
+  {id:8,n:"Deepa Joshi",p:"98765-0008",td:"2025-11-15",cv:true,pt:"Weekly",w:[1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:9,n:"Sanjay Patel",p:"98765-0009",td:"2025-12-01",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,1,0,0,0,0,0,0,0,0,0,0]},
+  {id:10,n:"Meera Desai",p:"98765-0010",td:"2025-12-05",cv:true,pt:"Weekly",w:[1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:11,n:"Aditya Rao",p:"98765-0011",td:"2026-01-02",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:12,n:"Pooja Gupta",p:"98765-0012",td:"2026-01-05",cv:true,pt:"Weekly",w:[1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:13,n:"Rohan Verma",p:"98765-0013",td:"2026-01-10",cv:false,pt:"Weekly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:14,n:"Neha Kapoor",p:"98765-0014",td:"2026-02-01",cv:true,pt:"Weekly",w:[1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:15,n:"Amit Saxena",p:"98765-0015",td:"2026-02-05",cv:true,pt:"Monthly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[1,0,0,0,0,0,0,0,0,0,0,0]},
+  {id:16,n:"Divya Pillai",p:"98765-0016",td:"2026-02-10",cv:true,pt:"Weekly",w:[1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]}
+];
+
+var tab = "overview";
+var retView = "weekly";
+var expanded = null;
+var charts = {};
+
+function mr(u){return !u.cv?0:u.pt==="Weekly"?Math.floor(u.w.reduce(function(a,b){return a+b},0)/4):u.m.reduce(function(a,b){return a+b},0)}
+function tr(u){return !u.cv?0:u.pt==="Weekly"?u.w.reduce(function(a,b){return a+b},0):u.m.reduce(function(a,b){return a+b},0)}
+function st(u){if(!u.cv)return "Trial";var m=mr(u);return m===0?"< 1 Month":"Retained "+m+"M+"}
+function coh(d){if(!d)return"";var dt=new Date(d);var months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];return months[dt.getMonth()]+" '"+String(dt.getFullYear()).slice(2)}
+function pf(n,d){return d>0?((n/d)*100).toFixed(1):"0.0"}
+function pc(v){return v>=0.8?"pct-g":v>=0.5?"pct-a":v>0?"pct-r":"pct-0"}
+
+function compute(){
+  var all=users.length;var paid=users.filter(function(u){return u.cv});var pn=paid.length;
+  var wku=paid.filter(function(u){return u.pt==="Weekly"});var mou=paid.filter(function(u){return u.pt==="Monthly"});
+  var wn=wku.length;var mn=mou.length;
+  var m1=paid.filter(function(u){return mr(u)>=1}).length;
+  var m2=paid.filter(function(u){return mr(u)>=2}).length;
+  var m3=paid.filter(function(u){return mr(u)>=3}).length;
+  var m4=paid.filter(function(u){return mr(u)>=4}).length;
+  var avgM=pn>0?(paid.reduce(function(s,u){return s+mr(u)},0)/pn).toFixed(1):"0";
+
+  var wRet=[];for(var i=0;i<16;i++){var c=wku.filter(function(u){return u.w[i]}).length;wRet.push({l:"W"+(i+1),u:c,p:wn>0?c/wn:0,isM:(i+1)%4===0,eq:Math.ceil((i+1)/4)})}
+  var mRet=[];for(var i=0;i<12;i++){var c=mou.filter(function(u){return u.m[i]}).length;mRet.push({l:"M"+(i+1),u:c,p:mn>0?c/mn:0})}
+
+  var cohMap={};
+  users.forEach(function(u){var c=coh(u.td);if(!c)return;if(!cohMap[c])cohMap[c]={co:c,t:0,p:0,mm:[0,0,0,0,0,0],sk:u.td};cohMap[c].t++;if(u.cv){cohMap[c].p++;var m=mr(u);for(var i=0;i<6;i++)if(m>=i+1)cohMap[c].mm[i]++}});
+  var cohs=Object.keys(cohMap).map(function(k){return cohMap[k]}).sort(function(a,b){return a.sk<b.sk?-1:1});
+
+  return {all:all,pn:pn,wn:wn,mn:mn,m1:m1,m2:m2,m3:m3,m4:m4,avgM:avgM,wRet:wRet,mRet:mRet,cohs:cohs,wku:wku,mou:mou}
+}
+
+// ═══ RENDER ═══
+function destroyCharts(){Object.keys(charts).forEach(function(k){if(charts[k]){charts[k].destroy();delete charts[k]}})}
+
+function renderTabs(){
+  var el=document.getElementById("tabs");
+  el.innerHTML=[["overview","Overview"],["retention","Retention"],["cohorts","Cohorts"],["data","Users"]].map(function(t){
+    return '<button class="tab'+(tab===t[0]?" on":"")+'" onclick="switchTab(\''+t[0]+'\')">'+t[1]+'</button>'
+  }).join("")
+}
+
+function switchTab(t){tab=t;renderTabs();render()}
+
+function render(){
+  destroyCharts();
+  var d=compute();
+  var el=document.getElementById("main");
+  if(tab==="overview")renderOverview(el,d);
+  else if(tab==="retention")renderRetention(el,d);
+  else if(tab==="cohorts")renderCohorts(el,d);
+  else renderUsers(el,d);
+}
+
+function renderOverview(el,d){
+  var kpis=[
+    {l:"TOTAL TRIALS",v:d.all,s:"Users who started trial",c:"#5a7a5a"},
+    {l:"PAID USERS",v:d.pn,s:pf(d.pn,d.all)+"% conversion rate",c:"#2563eb"},
+    {l:"1+ MONTH RETAINED",v:d.m1,s:pf(d.m1,d.pn)+"% of paid users",c:"#56AE53"},
+    {l:"AVG MONTHS RETAINED",v:d.avgM,s:"Per paid user",c:"#7c3aed"}
+  ];
+
+  var funnel=[
+    {l:"Total Trials",c:d.all,n:"All trial users",cl:"#94a3b8"},
+    {l:"Converted to Paid",c:d.pn,n:pf(d.pn,d.all)+"% of trials",cl:"#2563eb"},
+    {l:"Retained 1+ Month",c:d.m1,n:pf(d.m1,d.pn)+"% of paid",cl:"#56AE53"},
+    {l:"Retained 2+ Months",c:d.m2,n:pf(d.m2,d.pn)+"% of paid",cl:"#2d8c4e"},
+    {l:"Retained 3+ Months",c:d.m3,n:pf(d.m3,d.pn)+"% of paid",cl:"#1a2e1a"}
+  ];
+
+  var h='<div class="kpis">'+kpis.map(function(k){
+    return '<div class="cd kpi"><div class="kpi-label">'+k.l+'</div><div class="mn kpi-val" style="color:'+k.c+'">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>'
+  }).join("")+'</div>';
+
+  h+='<div class="cd" style="padding:20px;margin-bottom:14px"><div class="section-title">Trial → Paid → Retained Funnel</div><div class="section-sub">How users progress through each stage</div>';
+  funnel.forEach(function(f){
+    var w=d.all>0?Math.max((f.c/d.all)*100,3):3;
+    h+='<div class="funnel-row"><div class="funnel-top"><span class="funnel-label">'+f.l+'</span><div class="funnel-right"><span class="funnel-note">'+f.n+'</span><span class="mn funnel-val" style="color:'+f.cl+'">'+f.c+'</span></div></div><div class="bar-bg"><div class="bar-fill" style="width:'+w+'%;background:'+f.cl+'"></div></div></div>'
+  });
+  h+='</div>';
+
+  h+='<div class="cd chart-wrap"><div class="section-title">Retention Curve</div><div class="section-sub">% of paid users retained at each month (4 weekly renewals = 1 month)</div><div class="chart-box"><canvas id="retCurve"></canvas></div></div>';
+
+  h+='<div class="plan-row"><div class="plan-card" style="background:#eff6ff"><div class="plan-top"><span class="plan-label" style="color:#2563eb">Weekly Plans</span><span class="mn plan-val" style="color:#2563eb">'+d.wn+'</span></div><div class="plan-bar" style="background:#fff"><div style="height:100%;border-radius:2px;background:#2563eb;width:'+(d.pn>0?(d.wn/d.pn)*100:0)+'%"></div></div><div class="plan-sub" style="color:#5a7a5a">'+pf(d.wn,d.pn)+'% of paid users</div></div>';
+  h+='<div class="plan-card" style="background:#e8f5e9"><div class="plan-top"><span class="plan-label" style="color:#56AE53">Monthly Plans</span><span class="mn plan-val" style="color:#56AE53">'+d.mn+'</span></div><div class="plan-bar" style="background:#fff"><div style="height:100%;border-radius:2px;background:#56AE53;width:'+(d.pn>0?(d.mn/d.pn)*100:0)+'%"></div></div><div class="plan-sub" style="color:#5a7a5a">'+pf(d.mn,d.pn)+'% of paid users</div></div></div>';
+
+  el.innerHTML=h;
+
+  var curve=[1,d.pn>0?d.m1/d.pn:0,d.pn>0?d.m2/d.pn:0,d.pn>0?d.m3/d.pn:0,d.pn>0?d.m4/d.pn:0];
+  charts.retCurve=new Chart(document.getElementById("retCurve"),{type:"line",data:{labels:["Paid","M1","M2","M3","M4"],datasets:[{data:curve,borderColor:"#56AE53",backgroundColor:"rgba(86,174,83,0.1)",fill:true,tension:0.3,pointBackgroundColor:"#56AE53",pointRadius:5,pointBorderColor:"#fff",pointBorderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return (c.raw*100).toFixed(1)+"%"}}}},scales:{y:{min:0,max:1,ticks:{callback:function(v){return(v*100)+"%"},color:"#8fa98f",font:{size:10}},grid:{color:"#e8ede8"}},x:{ticks:{color:"#8fa98f",font:{size:10}},grid:{color:"#e8ede8"}}}}})
+}
+
+function renderRetention(el,d){
+  var data=retView==="weekly"?d.wRet:d.mRet;
+  var count=retView==="weekly"?d.wn:d.mn;
+  var color=retView==="weekly"?"#2563eb":"#56AE53";
+
+  var h='<div class="toggle-row">';
+  h+='<button class="toggle-btn" style="background:'+(retView==="weekly"?"#2563eb":"#fff")+";color:"+(retView==="weekly"?"#fff":"#5a7a5a")+";box-shadow:"+(retView==="weekly"?"none":"0 0 0 1px #e8ede8")+'" onclick="retView=\'weekly\';render()">Weekly</button>';
+  h+='<button class="toggle-btn" style="background:'+(retView==="monthly"?"#56AE53":"#fff")+";color:"+(retView==="monthly"?"#fff":"#5a7a5a")+";box-shadow:"+(retView==="monthly"?"none":"0 0 0 1px #e8ede8")+'" onclick="retView=\'monthly\';render()">Monthly</button>';
+  h+='<span class="toggle-hint">W4 = M1 · W8 = M2 · W12 = M3 · W16 = M4</span></div>';
+
+  h+='<div class="cd chart-wrap"><div class="section-title">'+(retView==="weekly"?"Weekly":"Monthly")+' Renewal Rate</div><div class="section-sub">Out of '+count+" "+(retView==="weekly"?"weekly":"monthly")+' users, how many renewed each '+(retView==="weekly"?"week":"month")+'</div><div class="chart-box"><canvas id="retChart"></canvas></div>';
+  if(retView==="weekly")h+='<div style="font-size:10px;color:#8fa98f"><span style="color:#2563eb">■</span> Regular week&nbsp;&nbsp;<span style="color:#56AE53">■</span> Month-equivalent</div>';
+  h+='</div>';
+
+  h+='<div class="cd" style="overflow:hidden"><table><thead><tr>';
+  if(retView==="weekly")h+='<th>Week</th><th>Renewed</th><th>% of '+d.wn+' Weekly Users</th><th>Month Eq.</th>';
+  else h+='<th>Month</th><th>Renewed</th><th>% of '+d.mn+' Monthly Users</th>';
+  h+='</tr></thead><tbody>';
+  data.forEach(function(r){
+    var cls=retView==="weekly"&&r.isM?' class="row-green"':"";
+    h+="<tr"+cls+"><td class='mn' style='font-weight:700;"+(retView==="weekly"&&r.isM?"color:#56AE53":"")+"'>"+r.l+"</td>";
+    h+="<td class='mn' style='font-weight:600'>"+r.u+"</td>";
+    h+="<td><span class='mn pct-badge "+pc(r.p)+"'>"+(r.p*100).toFixed(1)+"%</span></td>";
+    if(retView==="weekly")h+="<td>"+(r.isM?"<span class='month-eq'>= M"+r.eq+"</span>":"")+"</td>";
+    h+="</tr>"
+  });
+  h+='</tbody></table></div>';
+
+  el.innerHTML=h;
+
+  var bgColors=data.map(function(r){return retView==="weekly"?(r.isM?"#56AE53":"#2563eb"):"#56AE53"});
+  var alphas=data.map(function(r){return r.p>0?1:0.12});
+  charts.retChart=new Chart(document.getElementById("retChart"),{type:"bar",data:{labels:data.map(function(r){return r.l}),datasets:[{data:data.map(function(r){return r.p}),backgroundColor:bgColors.map(function(c,i){return c+(alphas[i]<1?"1F":"")},this),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return(c.raw*100).toFixed(1)+"%"}}}},scales:{y:{min:0,max:1,ticks:{callback:function(v){return(v*100)+"%"},color:"#8fa98f",font:{size:10}},grid:{color:"#e8ede8"}},x:{ticks:{color:"#8fa98f",font:{size:10}},grid:{display:false}}}}})
+}
+
+function renderCohorts(el,d){
+  var h='<div class="cd chart-wrap"><div class="section-title">Monthly Cohort Overview</div><div class="section-sub">Each bar group = users who started trial that month</div><div class="chart-box"><canvas id="cohChart"></canvas></div><div style="font-size:10px;color:#8fa98f"><span style="color:#cbd5e1">■</span> Trials&nbsp;&nbsp;<span style="color:#56AE53">■</span> Converted to Paid</div></div>';
+
+  h+='<div class="cd" style="overflow:hidden;margin-bottom:14px"><table><thead><tr><th>Cohort</th><th>Trials</th><th>Paid</th><th>Conversion Rate</th><th style="width:25%"></th></tr></thead><tbody>';
+  d.cohs.forEach(function(c){
+    var rate=c.t>0?c.p/c.t:0;
+    h+='<tr><td style="font-weight:700">'+c.co+'</td><td class="mn" style="font-weight:600">'+c.t+'</td><td class="mn" style="font-weight:700;color:#56AE53">'+c.p+'</td><td><span class="mn pct-badge '+pc(rate)+'">'+(rate*100).toFixed(0)+'%</span></td><td><div class="bar-bg"><div class="bar-fill" style="width:'+(rate*100)+'%;background:'+(rate>=0.8?"#56AE53":rate>=0.5?"#d97706":"#dc2626")+'"></div></div></td></tr>'
+  });
+  h+='</tbody></table></div>';
+
+  h+='<div class="cd" style="padding:20px"><div class="section-title">Retention After Conversion</div><div class="section-sub">Of each cohort\'s paid users, how many stayed for 1 month and 2 months?</div>';
+  d.cohs.forEach(function(c){
+    if(c.p===0)return;
+    var m1r=c.mm[0]/c.p;var m2r=c.mm[1]/c.p;
+    h+='<div class="coh-bar"><div class="coh-name">'+c.co+'<span>'+c.p+' paid users</span></div>';
+    h+='<div class="coh-metric"><div class="coh-metric-top"><span class="coh-metric-label">1 Month Retained</span><span class="mn" style="font-size:11px;font-weight:700;color:'+(m1r>=0.5?"#56AE53":"#d97706")+'">'+c.mm[0]+'/'+c.p+' ('+(m1r*100).toFixed(0)+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+(m1r*100)+'%;background:#56AE53;opacity:.8"></div></div></div>';
+    h+='<div class="coh-metric"><div class="coh-metric-top"><span class="coh-metric-label">2 Months Retained</span><span class="mn" style="font-size:11px;font-weight:700;color:'+(m2r>=0.5?"#56AE53":m2r>0?"#d97706":"#8fa98f")+'">'+c.mm[1]+'/'+c.p+' ('+(m2r*100).toFixed(0)+'%)</span></div><div class="bar-bg"><div class="bar-fill" style="width:'+(m2r*100)+'%;background:#2563eb;opacity:.7"></div></div></div></div>'
+  });
+  h+='<div class="note-box"><span style="color:#56AE53">■</span> 1 month retained&nbsp;&nbsp;<span style="color:#2563eb">■</span> 2 months retained&nbsp;&nbsp;(4 weekly renewals = 1 month)</div></div>';
+
+  el.innerHTML=h;
+
+  charts.cohChart=new Chart(document.getElementById("cohChart"),{type:"bar",data:{labels:d.cohs.map(function(c){return c.co}),datasets:[{label:"Trials",data:d.cohs.map(function(c){return c.t}),backgroundColor:"#cbd5e1",borderRadius:4},{label:"Paid",data:d.cohs.map(function(c){return c.p}),backgroundColor:"#56AE53",borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:"#8fa98f",font:{size:10},stepSize:1},grid:{color:"#e8ede8"}},x:{ticks:{color:"#8fa98f",font:{size:10}},grid:{display:false}}}}})
+}
+
+function renderUsers(el,d){
+  var h='<div class="user-header"><div><div style="font-size:14px;font-weight:700">User Management</div><div style="font-size:11px;color:#8fa98f">Click row to expand renewals · '+users.length+' users</div></div><button class="add-btn" onclick="addUser()">+ Add User</button></div>';
+
+  h+='<div class="cd" style="overflow:auto"><table style="min-width:700px"><thead><tr><th>#</th><th style="text-align:left">Name</th><th>Phone</th><th>Trial</th><th>Cohort</th><th>Conv</th><th>Plan</th><th>Ren.</th><th>Months</th><th>Status</th><th></th></tr></thead><tbody>';
+
+  users.forEach(function(u,idx){
+    var s=st(u);var isE=expanded===u.id;
+    var stCol=s==="Trial"?"#94a3b8":s==="< 1 Month"?"#d97706":"#56AE53";
+    var stBg=s==="Trial"?"#f1f5f9":s==="< 1 Month"?"#fffbeb":"#e8f5e9";
+
+    h+='<tr class="user-row" onclick="toggleExpand('+u.id+')" style="background:'+(isE?"rgba(232,245,233,.25)":idx%2===0?"#fff":"#fcfdfc")+'">';
+    h+='<td style="color:#8fa98f;font-size:11px">'+(idx+1)+'</td>';
+    h+='<td style="text-align:left"><input type="text" value="'+u.n+'" onchange="updUser('+u.id+',\'n\',this.value)" onclick="event.stopPropagation()" style="font-size:12px;font-weight:600;color:#1a2e1a;width:100px"></td>';
+    h+='<td><input type="text" value="'+u.p+'" onchange="updUser('+u.id+',\'p\',this.value)" onclick="event.stopPropagation()" style="font-size:11px;color:#5a7a5a;width:80px;text-align:center"></td>';
+    h+='<td><input type="date" value="'+u.td+'" onchange="updUser('+u.id+',\'td\',this.value)" onclick="event.stopPropagation()" style="font-size:11px;color:#2563eb;font-weight:600"></td>';
+    h+='<td style="font-size:11px;color:#8fa98f">'+coh(u.td)+'</td>';
+    h+='<td><button class="conv-btn" style="background:'+(u.cv?"#e8f5e9":"#f1f5f9")+";color:"+(u.cv?"#56AE53":"#94a3b8")+'" onclick="event.stopPropagation();toggleConv('+u.id+')">'+(u.cv?"Yes":"No")+'</button></td>';
+    h+='<td onclick="event.stopPropagation()"><select class="plan-select" style="background:'+(u.pt==="Weekly"?"#eff6ff":"#e8f5e9")+";color:"+(u.pt==="Weekly"?"#2563eb":"#56AE53")+'" onchange="updUser('+u.id+',\'pt\',this.value)"><option'+(u.pt==="Weekly"?" selected":"")+'>Weekly</option><option'+(u.pt==="Monthly"?" selected":"")+'>Monthly</option></select></td>';
+    h+='<td class="mn" style="font-weight:700">'+tr(u)+'</td>';
+    h+='<td class="mn" style="font-weight:700;color:#56AE53">'+mr(u)+'</td>';
+    h+='<td><span class="status-badge" style="background:'+stBg+';color:'+stCol+'">'+s+'</span></td>';
+    h+='<td style="white-space:nowrap"><span style="font-size:10px;color:'+(isE?"#56AE53":"#8fa98f")+'">'+(isE?"▲":"▼")+'</span> <button class="del-btn" onclick="event.stopPropagation();delUser('+u.id+')">✕</button></td>';
+    h+='</tr>';
+
+    if(isE&&u.cv){
+      var isW=u.pt==="Weekly";var arr=isW?u.w:u.m;var clr=isW?"#2563eb":"#56AE53";
+      h+='<tr><td colspan="11" class="expand-panel"><div class="expand-title" style="color:'+clr+'">'+(isW?"WEEKLY RENEWALS — click to toggle (4 weeks = 1 month)":"MONTHLY RENEWALS — click to toggle")+'</div><div class="renewal-btns">';
+      arr.forEach(function(v,vi){
+        var isMile=isW&&(vi+1)%4===0;
+        h+='<button class="ren-btn'+(v?(isW?" on":" on-m"):"")+'" style="border-color:'+(v?clr:"#e8ede8")+'" onclick="event.stopPropagation();togRen('+u.id+',\''+(isW?"w":"m")+'\','+vi+')">';
+        h+='<span class="ren-label" style="color:'+(v?clr:"#8fa98f")+'">'+(isW?"W":"M")+(vi+1)+'</span>';
+        h+='<span class="ren-check" style="color:'+(v?clr:"#ddd")+'">'+(v?"✓":"·")+'</span>';
+        if(isMile)h+='<span class="ren-mile">= M'+((vi+1)/4)+'</span>';
+        h+='</button>'
+      });
+      h+='</div></td></tr>'
+    }
+  });
+  h+='</tbody></table></div>';
+  el.innerHTML=h
+}
+
+// ═══ ACTIONS ═══
+function toggleExpand(id){expanded=expanded===id?null:id;render()}
+function toggleConv(id){users.forEach(function(u){if(u.id===id)u.cv=!u.cv});render()}
+function updUser(id,f,v){users.forEach(function(u){if(u.id===id)u[f]=v});render()}
+function togRen(id,type,idx){users.forEach(function(u){if(u.id===id)u[type][idx]=u[type][idx]?0:1});render()}
+function addUser(){users.push({id:Date.now(),n:"",p:"",td:"",cv:false,pt:"Weekly",w:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],m:[0,0,0,0,0,0,0,0,0,0,0,0]});render()}
+function delUser(id){users=users.filter(function(u){return u.id!==id});render()}
+
+// ═══ INIT ═══
+renderTabs();
+render();
+</script>
+</body>
+</html>
